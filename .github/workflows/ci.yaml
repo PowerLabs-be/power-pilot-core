@@ -208,7 +208,7 @@ jobs:
             || [[ "${{ github.event.inputs.mypy-only }}" == "true" ]] \
             || [[ "${{ github.event.inputs.audit-licenses-only }}" == "true" ]] \
             || [[ "${{ github.event_name }}" == "push" \
-              && "${{ github.event.repository.full_name }}" != "home-assistant/core" ]];
+              && "${{ github.event.repository.full_name }}" != "PowerLabs-be/power-pilot-core" ]];
           then
             lint_only="true"
             skip_coverage="true"

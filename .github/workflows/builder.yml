@@ -21,7 +21,7 @@ env:
 jobs:
   init:
     name: Initialize build
-    if: github.repository_owner == 'home-assistant'
+    if: github.repository_owner == 'PowerLabs-be'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -78,7 +78,7 @@ jobs:
 
   build_base:
     name: Build ${{ matrix.arch }} base core image
-    if: github.repository_owner == 'home-assistant'
+    if: github.repository_owner == 'PowerLabs-be'
     needs: init
     runs-on: ${{ matrix.os }}
     permissions:
@@ -203,8 +203,8 @@ jobs:
         id: vars
         shell: bash
         run: |
-          echo "base_image=ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant-base:${{ env.BASE_IMAGE_VERSION }}" >> "$GITHUB_OUTPUT"
-          echo "cache_image=ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant:latest" >> "$GITHUB_OUTPUT"
+          echo "base_image=ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant-base:${{ env.BASE_IMAGE_VERSION }}" >> "$GITHUB_OUTPUT"
+          echo "cache_image=ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant:latest" >> "$GITHUB_OUTPUT"
           echo "created=$(date --rfc-3339=seconds --utc)" >> "$GITHUB_OUTPUT"
 
       - name: Verify base image signature
@@ -220,7 +220,7 @@ jobs:
         run: |
           cosign verify \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp "https://github.com/home-assistant/core/.*" \
+            --certificate-identity-regexp "https://github.com/PowerLabs-be/power-pilot-core/.*" \
             "${{ steps.vars.outputs.cache_image }}"
 
       - name: Build base image
@@ -234,7 +234,7 @@ jobs:
           cache-from: ${{ steps.cache.outcome == 'success' && steps.vars.outputs.cache_image || '' }}
           build-args: |
             BUILD_FROM=${{ steps.vars.outputs.base_image }}
-          tags: ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
+          tags: ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
           labels: |
             io.hass.arch=${{ matrix.arch }}
             io.hass.version=${{ needs.init.outputs.version }}
@@ -243,11 +243,11 @@ jobs:
 
       - name: Sign image
         run: |
-          cosign sign --yes "ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}@${{ steps.build.outputs.digest }}"
+          cosign sign --yes "ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}@${{ steps.build.outputs.digest }}"
 
   build_machine:
     name: Build ${{ matrix.machine }} machine core image
-    if: github.repository_owner == 'home-assistant'
+    if: github.repository_owner == 'PowerLabs-be'
     needs: ["init", "build_base"]
     runs-on: ubuntu-latest
     permissions:
@@ -306,7 +306,7 @@ jobs:
   publish_ha:
     name: Publish version files
     environment: ${{ needs.init.outputs.channel }}
-    if: github.repository_owner == 'home-assistant'
+    if: github.repository_owner == 'PowerLabs-be'
     needs: ["init", "build_machine"]
     runs-on: ubuntu-latest
     steps:
@@ -342,7 +342,7 @@ jobs:
   publish_container:
     name: Publish meta container for ${{ matrix.registry }}
     environment: ${{ needs.init.outputs.channel }}
-    if: github.repository_owner == 'home-assistant'
+    if: github.repository_owner == 'PowerLabs-be'
     needs: ["init", "build_base"]
     runs-on: ubuntu-latest
     permissions:
@@ -352,12 +352,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        registry: ["ghcr.io/home-assistant", "docker.io/homeassistant"]
+        registry: ["ghcr.io/powerlabs-be", "docker.io/powerlabs-be"]
     steps:
       - *install_cosign
 
       - name: Login to DockerHub
-        if: matrix.registry == 'docker.io/homeassistant'
+        if: matrix.registry == 'docker.io/powerlabs-be'
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -378,8 +378,8 @@ jobs:
             echo "Verifying ${arch} image signature..."
             cosign verify \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-              --certificate-identity-regexp https://github.com/home-assistant/core/.* \
-              "ghcr.io/home-assistant/${arch}-homeassistant:${{ needs.init.outputs.version }}"
+              --certificate-identity-regexp https://github.com/PowerLabs-be/power-pilot-core/.* \
+              "ghcr.io/powerlabs-be/${arch}-homeassistant:${{ needs.init.outputs.version }}"
           done
           echo "✓ All images verified successfully"
 
@@ -393,7 +393,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
-          images: ${{ matrix.registry }}/home-assistant
+          images: ${{ matrix.registry }}/power-pilot
           sep-tags: ","
           tags: |
             type=raw,value=${{ needs.init.outputs.version }},priority=9999
@@ -408,7 +408,7 @@ jobs:
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.7.1
 
       - name: Copy architecture images to DockerHub
-        if: matrix.registry == 'docker.io/homeassistant'
+        if: matrix.registry == 'docker.io/powerlabs-be'
         shell: bash
         run: |
           # Use imagetools to copy image blobs directly between registries
@@ -418,8 +418,8 @@ jobs:
             echo "Copying ${arch} image to DockerHub..."
             for attempt in 1 2 3; do
               if docker buildx imagetools create \
-                --tag "docker.io/homeassistant/${arch}-homeassistant:${{ needs.init.outputs.version }}" \
-                "ghcr.io/home-assistant/${arch}-homeassistant:${{ needs.init.outputs.version }}"; then
+                --tag "docker.io/powerlabs-be/${arch}-homeassistant:${{ needs.init.outputs.version }}" \
+                "ghcr.io/powerlabs-be/${arch}-homeassistant:${{ needs.init.outputs.version }}"; then
                 break
               fi
               echo "Attempt ${attempt} failed, retrying in 10 seconds..."
@@ -429,7 +429,7 @@ jobs:
                 exit 1
               fi
             done
-            cosign sign --yes "docker.io/homeassistant/${arch}-homeassistant:${{ needs.init.outputs.version }}"
+            cosign sign --yes "docker.io/powerlabs-be/${arch}-homeassistant:${{ needs.init.outputs.version }}"
           done
 
       - name: Create and push multi-arch manifests
@@ -471,7 +471,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    if: github.repository_owner == 'home-assistant' && needs.init.outputs.publish == 'true'
+    if: github.repository_owner == 'PowerLabs-be' && needs.init.outputs.publish == 'true'
     steps:
       - name: Checkout the repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -513,10 +513,10 @@ jobs:
       attestations: write
       id-token: write
     needs: ["init"]
-    if: github.repository_owner == 'home-assistant'
+    if: github.repository_owner == 'PowerLabs-be'
     env:
-      HASSFEST_IMAGE_NAME: ghcr.io/home-assistant/hassfest
-      HASSFEST_IMAGE_TAG: ghcr.io/home-assistant/hassfest:${{ needs.init.outputs.version }}
+      HASSFEST_IMAGE_NAME: ghcr.io/powerlabs-be/hassfest
+      HASSFEST_IMAGE_TAG: ghcr.io/powerlabs-be/hassfest:${{ needs.init.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1

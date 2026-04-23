@@ -117,7 +117,7 @@ jobs:
         uses: dawidd6/action-download-artifact@8305c0f1062bb0d184d09ef4493ecb9288447732 # v20
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          repo: home-assistant/frontend
+          repo: PowerLabs-be/power-pilot-frontend
           branch: dev
           workflow: nightly.yaml
           workflow_conclusion: success
@@ -152,17 +152,17 @@ jobs:
           uv pip install .
           python3 script/version_bump.py nightly --set-nightly-version "${VERSION}"
 
-          if [[ "$(ls home_assistant_frontend*.whl)" =~ ^home_assistant_frontend-(.*)-py3-none-any.whl$ ]]; then
+          if [[ "$(ls power_pilot_frontend*.whl)" =~ ^power_pilot_frontend-(.*)-py3-none-any.whl$ ]]; then
             echo "Found frontend wheel, setting version to: ${BASH_REMATCH[1]}"
             frontend_version="${BASH_REMATCH[1]}" yq \
               --inplace e -o json \
-              '.requirements = ["home-assistant-frontend=="+env(frontend_version)]' \
+              '.requirements = ["power-pilot-frontend=="+env(frontend_version)]' \
               homeassistant/components/frontend/manifest.json
 
-            sed -i "s|home-assistant-frontend==.*|home-assistant-frontend==${BASH_REMATCH[1]}|" \
+            sed -i "s|power-pilot-frontend==.*|power-pilot-frontend==${BASH_REMATCH[1]}|" \
               homeassistant/package_constraints.txt
 
-            sed -i "s|home-assistant-frontend==.*||" requirements_all.txt
+            sed -i "s|power-pilot-frontend==.*||" requirements_all.txt
           fi
 
           if [[ "$(ls home_assistant_intents*.whl)" =~ ^home_assistant_intents-(.*)-py3-none-any.whl$ ]]; then

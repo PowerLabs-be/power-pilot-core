@@ -416,19 +416,29 @@ jobs:
           ARCHS=$(echo "${ARCHITECTURES}" | jq -r '.[]')
           for arch in $ARCHS; do
             echo "Copying ${arch} image to DockerHub..."
-            for attempt in 1 2 3; do
-              if docker buildx imagetools create \
+
+            # optional: ensure buildx is healthy for each arch copy
+            docker buildx ls
+
+            max=6
+            for attempt in $(seq 1 $max); do
+              if docker --debug buildx imagetools create \
                 --tag "docker.io/powerlabs/${arch}-power-pilot-core:${VERSION}" \
-                "ghcr.io/powerlabs-be/${arch}-power-pilot-core:${VERSION}"; then
+                "ghcr.io/powerlabs-be/${arch}-power-pilot-core:${VERSION}"
+              then
                 break
               fi
-              echo "Attempt ${attempt} failed, retrying in 10 seconds..."
-              sleep 10
-              if [ "${attempt}" -eq 3 ]; then
-                echo "Failed after 3 attempts"
+
+              if [ "$attempt" -eq "$max" ]; then
+                echo "Failed after ${max} attempts"
                 exit 1
               fi
+
+              sleep_seconds=$((10 * 2 ** (attempt - 1)))
+              echo "Attempt ${attempt} failed, retrying in ${sleep_seconds}s..."
+              sleep "${sleep_seconds}"
             done
+
             cosign sign --yes "docker.io/powerlabs/${arch}-power-pilot-core:${VERSION}"
           done
 

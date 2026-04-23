@@ -15,7 +15,7 @@ concurrency:
 jobs:
   stale:
     name: Mark stale issues and PRs
-    if: github.repository_owner == 'home-assistant'
+    if: github.repository_owner == 'PowerLabs-be'
     runs-on: ubuntu-latest
     permissions:
       issues: write # To label and close stale issues

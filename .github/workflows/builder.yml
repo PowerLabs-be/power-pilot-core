@@ -9,6 +9,7 @@ on:
     - cron: "0 2 * * *"
 
 env:
+  LOKALISE_TOKEN: ${{ secrets.LOKALISE_TOKEN }}
   BUILD_TYPE: core
   PIP_TIMEOUT: 60
   UV_HTTP_TIMEOUT: 60
@@ -67,22 +68,20 @@ jobs:
           fi
 
       - name: Download Translations
-        if: ${{ secrets.LOKALISE_TOKEN != '' }}
-        env:
-          LOKALISE_TOKEN: ${{ secrets.LOKALISE_TOKEN }} # zizmor: ignore[secrets-outside-env]
+        if: ${{ env.LOKALISE_TOKEN != '' }}
         run: python3 -m script.translations download
 
       - name: Skip translations (no LOKALISE_TOKEN configured)
-        if: ${{ secrets.LOKALISE_TOKEN == '' }}
+        if: ${{ env.LOKALISE_TOKEN == '' }}
         run: echo "LOKALISE_TOKEN not set; skipping translation download/artifact."
 
       - name: Archive translations
-        if: ${{ secrets.LOKALISE_TOKEN != '' }}
+        if: ${{ env.LOKALISE_TOKEN != '' }}
         shell: bash
         run: find ./homeassistant/components/*/translations -name "*.json" | tar zcvf translations.tar.gz -T -
 
       - name: Upload translations
-        if: ${{ secrets.LOKALISE_TOKEN != '' }}
+        if: ${{ env.LOKALISE_TOKEN != '' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: translations
@@ -185,13 +184,13 @@ jobs:
           fi
 
       - name: Download translations
-        if: ${{ secrets.LOKALISE_TOKEN != '' }}
+        if: ${{ env.LOKALISE_TOKEN != '' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: translations
 
       - name: Extract translations
-        if: ${{ secrets.LOKALISE_TOKEN != '' }}
+        if: ${{ env.LOKALISE_TOKEN != '' }}
         run: |
           tar xvf translations.tar.gz
           rm translations.tar.gz
@@ -490,13 +489,13 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Download translations
-        if: ${{ secrets.LOKALISE_TOKEN != '' }}
+        if: ${{ env.LOKALISE_TOKEN != '' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: translations
 
       - name: Extract translations
-        if: ${{ secrets.LOKALISE_TOKEN != '' }}
+        if: ${{ env.LOKALISE_TOKEN != '' }}
         run: |
           tar xvf translations.tar.gz
           rm translations.tar.gz

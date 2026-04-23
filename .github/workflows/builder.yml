@@ -49,12 +49,12 @@ jobs:
 
       - name: Get version
         id: version
-        uses: home-assistant/actions/helpers/version@master # zizmor: ignore[unpinned-uses]
+        uses: PowerLabs-be/power-pilot-actions/helpers/version@master # zizmor: ignore[unpinned-uses]
         with:
           type: ${{ env.BUILD_TYPE }}
 
       - name: Verify version
-        uses: home-assistant/actions/helpers/verify-version@master # zizmor: ignore[unpinned-uses]
+        uses: PowerLabs-be/power-pilot-actions/helpers/verify-version@master # zizmor: ignore[unpinned-uses]
         with:
           ignore-dev: true
 
@@ -67,15 +67,22 @@ jobs:
           fi
 
       - name: Download Translations
-        run: python3 -m script.translations download
+        if: ${{ secrets.LOKALISE_TOKEN != '' }}
         env:
           LOKALISE_TOKEN: ${{ secrets.LOKALISE_TOKEN }} # zizmor: ignore[secrets-outside-env]
+        run: python3 -m script.translations download
+
+      - name: Skip translations (no LOKALISE_TOKEN configured)
+        if: ${{ secrets.LOKALISE_TOKEN == '' }}
+        run: echo "LOKALISE_TOKEN not set; skipping translation download/artifact."
 
       - name: Archive translations
+        if: ${{ secrets.LOKALISE_TOKEN != '' }}
         shell: bash
         run: find ./homeassistant/components/*/translations -name "*.json" | tar zcvf translations.tar.gz -T -
 
       - name: Upload translations
+        if: ${{ secrets.LOKALISE_TOKEN != '' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: translations
@@ -178,11 +185,13 @@ jobs:
           fi
 
       - name: Download translations
+        if: ${{ secrets.LOKALISE_TOKEN != '' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: translations
 
       - name: Extract translations
+        if: ${{ secrets.LOKALISE_TOKEN != '' }}
         run: |
           tar xvf translations.tar.gz
           rm translations.tar.gz
@@ -197,12 +206,12 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           build-args: |
-            BUILD_FROM=ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant-base:${{ needs.init.outputs.base_image_version }}
+            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant-base:${{ needs.init.outputs.base_image_version }}
           cache-gha: false
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           cosign-base-identity: "https://github.com/home-assistant/docker/.*"
-          cosign-base-verify: ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant-base:${{ needs.init.outputs.base_image_version }}
-          image: ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant
+          cosign-base-verify: ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant-base:${{ needs.init.outputs.base_image_version }}
+          image: ghcr.io/powerlabs-be/${{ matrix.arch }}-power-pilot-core
           image-tags: ${{ needs.init.outputs.version }}
           push: true
           version: ${{ needs.init.outputs.version }}
@@ -268,21 +277,21 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           build-args: |
-            BUILD_FROM=ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
+            BUILD_FROM=ghcr.io/powerlabs-be/${{ matrix.arch }}-power-pilot-core:${{ needs.init.outputs.version }}
           cache-gha: false
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           context: machine/
           cosign-base-identity: "https://github.com/PowerLabs-be/power-pilot-core/.*"
-          cosign-base-verify: ghcr.io/powerlabs-be/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
+          cosign-base-verify: ghcr.io/powerlabs-be/${{ matrix.arch }}-power-pilot-core:${{ needs.init.outputs.version }}
           file: machine/${{ matrix.machine }}
-          image: ghcr.io/powerlabs-be/${{ matrix.machine }}-homeassistant
+          image: ghcr.io/powerlabs-be/${{ matrix.machine }}-power-pilot-core
           image-tags: |
             ${{ needs.init.outputs.version }}
             ${{ steps.tags.outputs.extra_tags }}
           push: true
           version: ${{ needs.init.outputs.version }}
 
-  publish_ha:
+  publish_pp:
     name: Publish version files
     environment: ${{ needs.init.outputs.channel }}
     if: github.repository_owner == 'PowerLabs-be'
@@ -297,27 +306,27 @@ jobs:
           persist-credentials: false
 
       - name: Initialize git
-        uses: home-assistant/actions/helpers/git-init@master # zizmor: ignore[unpinned-uses]
+        uses: PowerLabs-be/power-pilot-actions/helpers/git-init@master # zizmor: ignore[unpinned-uses]
         with:
           name: ${{ secrets.GIT_NAME }}
           email: ${{ secrets.GIT_EMAIL }}
           token: ${{ secrets.GIT_TOKEN }}
 
       - name: Update version file
-        uses: home-assistant/actions/helpers/version-push@master # zizmor: ignore[unpinned-uses]
+        uses: PowerLabs-be/power-pilot-actions/helpers/version-push@master # zizmor: ignore[unpinned-uses]
         with:
-          key: "homeassistant[]"
-          key-description: "Home Assistant Core"
+          key: "power-pilot-core[]"
+          key-description: "Power Pilot Core"
           version: ${{ needs.init.outputs.version }}
           channel: ${{ needs.init.outputs.channel }}
           exclude-list: '["odroid-xu","qemuarm","qemux86","raspberrypi","raspberrypi2","raspberrypi3","raspberrypi4","tinker"]'
 
       - name: Update version file (stable -> beta)
         if: needs.init.outputs.channel == 'stable'
-        uses: home-assistant/actions/helpers/version-push@master # zizmor: ignore[unpinned-uses]
+        uses: PowerLabs-be/power-pilot-actions/helpers/version-push@master # zizmor: ignore[unpinned-uses]
         with:
-          key: "homeassistant[]"
-          key-description: "Home Assistant Core"
+          key: "power-pilot-core[]"
+          key-description: "Power Pilot Core"
           version: ${{ needs.init.outputs.version }}
           channel: beta
           exclude-list: '["odroid-xu","qemuarm","qemux86","raspberrypi","raspberrypi2","raspberrypi3","raspberrypi4","tinker"]'
@@ -335,7 +344,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        registry: ["ghcr.io/powerlabs-be", "docker.io/powerlabs-be"]
+        registry: ["ghcr.io/powerlabs-be", "docker.io/powerlabs"]
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
@@ -343,7 +352,7 @@ jobs:
           cosign-release: "v2.5.3"
 
       - name: Login to DockerHub
-        if: matrix.registry == 'docker.io/powerlabs-be'
+        if: matrix.registry == 'docker.io/powerlabs'
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -368,7 +377,7 @@ jobs:
             cosign verify \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com \
               --certificate-identity-regexp https://github.com/PowerLabs-be/power-pilot-core/.* \
-              "ghcr.io/powerlabs-be/${arch}-homeassistant:${VERSION}"
+              "ghcr.io/powerlabs-be/${arch}-power-pilot-core:${VERSION}"
           done
           echo "✓ All images verified successfully"
 
@@ -382,7 +391,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
-          images: ${{ matrix.registry }}/power-pilot
+          images: ${{ matrix.registry }}/power-pilot-core
           sep-tags: ","
           tags: |
             type=raw,value=${{ needs.init.outputs.version }},priority=9999
@@ -397,7 +406,7 @@ jobs:
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v3.7.1
 
       - name: Copy architecture images to DockerHub
-        if: matrix.registry == 'docker.io/powerlabs-be'
+        if: matrix.registry == 'docker.io/powerlabs'
         shell: bash
         env:
           ARCHITECTURES: ${{ needs.init.outputs.architectures }}
@@ -410,8 +419,8 @@ jobs:
             echo "Copying ${arch} image to DockerHub..."
             for attempt in 1 2 3; do
               if docker buildx imagetools create \
-                --tag "docker.io/powerlabs-be/${arch}-homeassistant:${VERSION}" \
-                "ghcr.io/powerlabs-be/${arch}-homeassistant:${VERSION}"; then
+                --tag "docker.io/powerlabs/${arch}-power-pilot-core:${VERSION}" \
+                "ghcr.io/powerlabs-be/${arch}-power-pilot-core:${VERSION}"; then
                 break
               fi
               echo "Attempt ${attempt} failed, retrying in 10 seconds..."
@@ -421,7 +430,7 @@ jobs:
                 exit 1
               fi
             done
-            cosign sign --yes "docker.io/powerlabs-be/${arch}-homeassistant:${VERSION}"
+            cosign sign --yes "docker.io/powerlabs/${arch}-power-pilot-core:${VERSION}"
           done
 
       - name: Create and push multi-arch manifests
@@ -436,7 +445,7 @@ jobs:
           ARCHS=$(echo "${ARCHITECTURES}" | jq -r '.[]')
           ARCH_IMAGES=()
           for arch in $ARCHS; do
-            ARCH_IMAGES+=("${REGISTRY}/${arch}-homeassistant:${VERSION}")
+            ARCH_IMAGES+=("${REGISTRY}/${arch}-power-pilot-core:${VERSION}")
           done
 
           # Build list of all tags for single manifest creation
@@ -481,11 +490,13 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Download translations
+        if: ${{ secrets.LOKALISE_TOKEN != '' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: translations
 
       - name: Extract translations
+        if: ${{ secrets.LOKALISE_TOKEN != '' }}
         run: |
           tar xvf translations.tar.gz
           rm translations.tar.gz

@@ -39,7 +39,6 @@ habluetooth==6.1.0
 hass-nabucasa==2.2.0
 hassil==3.5.0
 home-assistant-bluetooth==2.0.0
-home-assistant-frontend==20260325.7
 home-assistant-intents==2026.3.24
 httpx==0.28.1
 ifaddr==0.2.0
@@ -51,6 +50,7 @@ orjson==3.11.8
 packaging>=23.1
 paho-mqtt==2.1.0
 Pillow==12.2.0
+power-pilot-frontend==20260424.2
 propcache==0.4.1
 psutil-home-assistant==0.0.1
 PyJWT==2.12.1

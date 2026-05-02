@@ -586,8 +586,8 @@ CLAUDE.md @home-assistant/core
 /tests/components/fritzbox/ @mib1185 @flabbamann
 /homeassistant/components/fronius/ @farmio
 /tests/components/fronius/ @farmio
-/homeassistant/components/frontend/ @home-assistant/frontend
-/tests/components/frontend/ @home-assistant/frontend
+/homeassistant/components/frontend/ @PowerLabs-be/power-pilot-frontend
+/tests/components/frontend/ @PowerLabs-be/power-pilot-frontend
 /homeassistant/components/frontier_silicon/ @wlcrs
 /tests/components/frontier_silicon/ @wlcrs
 /homeassistant/components/fujitsu_fglair/ @crevetor

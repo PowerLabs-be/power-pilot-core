@@ -1244,9 +1244,6 @@ hole==0.9.0
 # homeassistant.components.workday
 holidays==0.94
 
-# homeassistant.components.frontend
-home-assistant-frontend==20260325.7
-
 # homeassistant.components.conversation
 home-assistant-intents==2026.3.24
 
@@ -1816,6 +1813,9 @@ pmsensor==0.4
 
 # homeassistant.components.poolsense
 poolsense==0.0.8
+
+# homeassistant.components.frontend
+power-pilot-frontend==20260424.2
 
 # homeassistant.components.powerfox
 # homeassistant.components.powerfox_local
